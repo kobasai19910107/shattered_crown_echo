@@ -33,6 +33,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          if ! command -v curl >/dev/null 2>&1 || ! command -v python3 >/dev/null 2>&1; then
+            apt-get update -qq
+            DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends curl ca-certificates python3
+          fi
           mkdir -p assets/fonts
           curl --fail --location --retry 3 --silent --show-error \
             'https://raw.githubusercontent.com/google/fonts/main/ofl/notosansjp/NotoSansJP%5Bwght%5D.ttf' \
@@ -45,8 +49,8 @@ jobs:
           from pathlib import Path
           project = Path("project.godot")
           text = project.read_text(encoding="utf-8")
-          assert "[gui]\\n" in text
-          text = text.replace("[gui]\\n", '[gui]\\ntheme/custom_font="res://assets/fonts/NotoSansJP.ttf"\\n', 1)
+          assert "[gui]" in text
+          text = text.replace("[gui]", '[gui]' + chr(10) + 'theme/custom_font="res://assets/fonts/NotoSansJP.ttf"', 1)
           project.write_text(text, encoding="utf-8")
           PY
       - name: Godot import
@@ -66,6 +70,7 @@ jobs:
           godot --headless --path . --export-release Web build/web/index.html
           test -s build/web/index.html
           test -n "$(find build/web -name '*.wasm' -print -quit)"
+          cp assets/fonts/OFL.txt build/web/FONT_LICENSE_SIL_OFL.txt
           touch build/web/.nojekyll
       - name: Upload web artifact
         uses: actions/upload-pages-artifact@v4
