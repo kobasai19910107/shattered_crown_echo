@@ -26,7 +26,7 @@ func _ready() -> void:
     _refresh()
 
 func _build_ui() -> void:
-    custom_minimum_size = Vector2(304, 176)
+    custom_minimum_size = Vector2(264 if OS.has_feature("web") else 304, 160 if OS.has_feature("web") else 176)
     size_flags_horizontal = Control.SIZE_EXPAND_FILL
     mouse_filter = Control.MOUSE_FILTER_PASS
 
@@ -105,7 +105,7 @@ func set_active(value: bool) -> void:
 
 func set_compact(value: bool) -> void:
     _compact = value
-    custom_minimum_size = Vector2(304, 148 if _compact else 176)
+    custom_minimum_size = Vector2(264 if OS.has_feature("web") else 304, 142 if OS.has_feature("web") else (148 if _compact else 176))
     _refresh()
 
 func set_preview(preview: Dictionary) -> void:

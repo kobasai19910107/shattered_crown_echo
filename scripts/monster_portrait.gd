@@ -49,6 +49,11 @@ static func texture_for(enemy_id: String) -> Texture2D:
         atlas.atlas = load(definition[0])
         var bounds: Rect2=definition[1]
         if not REGIONS.has(enemy_id): bounds=Rect2(bounds.position*atlas.atlas.get_size(),bounds.size*atlas.atlas.get_size())
+        # Region 1 source rectangles assume 1536x1024, while Web sheets
+        # are downscaled. Rescale region by the actual sheet dimensions.
+        if REGIONS.has(enemy_id):
+            var factor: Vector2 = Vector2(atlas.atlas.get_width(), atlas.atlas.get_height()) / Vector2(1536.0, 1024.0)
+            bounds = Rect2(bounds.position * factor, bounds.size * factor)
         atlas.region = bounds
         atlas.filter_clip = true
         textures[enemy_id] = atlas
@@ -80,7 +85,7 @@ static func update(button: Button, enemy: Dictionary) -> void:
         if visual != null:
             button.remove_child(visual)
             visual.queue_free()
-        button.custom_minimum_size.y = 132
+        button.custom_minimum_size.y = 102 if OS.has_feature("web") else 132
         return
     if visual == null:
         visual = VBoxContainer.new()
@@ -96,7 +101,7 @@ static func update(button: Button, enemy: Dictionary) -> void:
         var portrait = TextureRect.new()
         portrait.name = "Portrait"
         portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
-        portrait.custom_minimum_size.y = 105
+        portrait.custom_minimum_size.y = 70 if OS.has_feature("web") else 105
         portrait.size_flags_vertical = Control.SIZE_EXPAND_FILL
         portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
         portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
@@ -106,9 +111,9 @@ static func update(button: Button, enemy: Dictionary) -> void:
         stats.mouse_filter = Control.MOUSE_FILTER_IGNORE
         stats.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
         stats.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-        stats.add_theme_font_size_override("font_size", 13)
+        stats.add_theme_font_size_override("font_size", 12 if OS.has_feature("web") else 13)
         visual.add_child(stats)
-    button.custom_minimum_size.y = 170
+    button.custom_minimum_size.y = 124 if OS.has_feature("web") else 170
     visual.get_node("Portrait").texture = texture
     visual.get_node("Portrait").modulate = Color(0.4, 0.4, 0.4) if int(enemy.get("hp", 0)) <= 0 else Color.WHITE
     visual.get_node("Stats").text = button.text

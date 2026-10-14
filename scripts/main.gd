@@ -81,6 +81,7 @@ var discard_pile_button: Button
 var exhaust_pile_button: Button
 var enemy_status_boxes: Array[HBoxContainer] = []
 var icon_cache: Dictionary = {}
+var mobile_detail_button: Button
 var battle_title_label: Label
 var battle_subtitle_label: Label
 var battle_dev_button: Button
@@ -582,13 +583,21 @@ func _setup_hover_preview_timers() -> void:
     hover_clear_timer.timeout.connect(_clear_hover_preview_delayed)
     add_child(hover_clear_timer)
 
+func _show_selected_card_detail() -> void:
+    if selected_hand_index < 0 or selected_hand_index >= hand_box.get_child_count():
+        return
+    var card_button: Control = hand_box.get_child(selected_hand_index) as Control
+    if card_button != null and card_button.has_method("show_detail"):
+        card_button.call("show_detail")
+
 func _build_ui() -> void:
+    var web_touch: bool = OS.has_feature("web")
     var margin = MarginContainer.new()
     margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-    margin.add_theme_constant_override("margin_left", 28)
-    margin.add_theme_constant_override("margin_top", 18)
-    margin.add_theme_constant_override("margin_right", 28)
-    margin.add_theme_constant_override("margin_bottom", 18)
+    margin.add_theme_constant_override("margin_left", 9 if web_touch else 28)
+    margin.add_theme_constant_override("margin_top", 7 if web_touch else 18)
+    margin.add_theme_constant_override("margin_right", 9 if web_touch else 28)
+    margin.add_theme_constant_override("margin_bottom", 7 if web_touch else 18)
     add_child(margin)
 
     tab_container = TabContainer.new()
@@ -599,14 +608,20 @@ func _build_ui() -> void:
         if coop_ui!=null and coop_ui.presentation!=null:coop_ui.presentation.clear_effects())
     margin.add_child(tab_container)
 
-    var battle_scroll = VBoxContainer.new()
+    # The web combat screen can scroll vertically on short landscape displays.
+    var battle_scroll: Control = ScrollContainer.new() if web_touch else VBoxContainer.new()
     battle_scroll.name = "Battle"
+    battle_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    battle_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+    if web_touch:
+        (battle_scroll as ScrollContainer).horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+        (battle_scroll as ScrollContainer).vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
     tab_container.add_child(battle_scroll)
 
     var root = VBoxContainer.new()
     root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     root.size_flags_vertical = Control.SIZE_EXPAND_FILL
-    root.add_theme_constant_override("separation", 10)
+    root.add_theme_constant_override("separation", 5 if web_touch else 10)
     battle_scroll.add_child(root)
 
     # v1.6.8: compact game-like battle header based on the earlier prototype screens.
@@ -617,7 +632,7 @@ func _build_ui() -> void:
 
     var setup_button = Button.new()
     var region_button=Button.new()
-    region_button.text="Region / 拠点"
+    region_button.text="拠点へ" if web_touch else "Region / 拠点"
     region_button.pressed.connect(func():
         if region_run_ui!=null:
             region_run_ui.sync_battle()
@@ -628,47 +643,55 @@ func _build_ui() -> void:
     online_button.text="オンライン協力"
     online_button.pressed.connect(_on_online_open)
     header.add_child(online_button)
+    online_button.visible = not web_touch
     setup_button.text = "設定"
     setup_button.add_to_group("sce_developer_navigation")
     setup_button.pressed.connect(_on_return_to_setup_pressed)
     header.add_child(setup_button)
+    setup_button.visible = not web_touch
 
     var loadout_button = Button.new()
     loadout_button.text = "装備"
     loadout_button.add_to_group("sce_developer_navigation")
     loadout_button.pressed.connect(_on_open_loadout_pressed)
     header.add_child(loadout_button)
+    loadout_button.visible = not web_touch
 
     var roll_button = Button.new()
     roll_button.text = "120装備抽選"
     roll_button.add_to_group("sce_developer_navigation")
     roll_button.pressed.connect(_on_step8_open)
     header.add_child(roll_button)
+    roll_button.visible = not web_touch
 
     var playtest_button = Button.new()
     playtest_button.text = "記録"
     playtest_button.pressed.connect(_on_open_playtest_pressed)
     header.add_child(playtest_button)
+    playtest_button.visible = not web_touch
 
     var header_spacer_left = Control.new()
     header_spacer_left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     header.add_child(header_spacer_left)
+    header_spacer_left.visible = not web_touch
 
     battle_title_label = Label.new()
     battle_title_label.text = "模擬戦闘"
     battle_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-    battle_title_label.add_theme_font_size_override("font_size", 25)
+    battle_title_label.add_theme_font_size_override("font_size", 18 if web_touch else 25)
     battle_title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     header.add_child(battle_title_label)
 
     var header_spacer_right = Control.new()
     header_spacer_right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     header.add_child(header_spacer_right)
+    header_spacer_right.visible = not web_touch
 
     battle_dev_button = Button.new()
     battle_dev_button.text = "開発"
     battle_dev_button.pressed.connect(_on_battle_dev_button_pressed)
     header.add_child(battle_dev_button)
+    battle_dev_button.visible = not web_touch
 
     battle_log_button = Button.new()
     battle_log_button.text = "ログ"
@@ -679,6 +702,7 @@ func _build_ui() -> void:
     battle_state_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
     battle_state_label.custom_minimum_size = Vector2(90, 0)
     header.add_child(battle_state_label)
+    battle_state_label.custom_minimum_size = Vector2(0, 0) if web_touch else Vector2(90, 0)
 
     battle_subtitle_label = Label.new()
     battle_subtitle_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -696,7 +720,7 @@ func _build_ui() -> void:
     root.add_child(battle_body)
 
     var sidebar_panel = PanelContainer.new()
-    sidebar_panel.custom_minimum_size = Vector2(304, 0)
+    sidebar_panel.custom_minimum_size = Vector2(268 if web_touch else 304, 0)
     sidebar_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
     battle_body.add_child(sidebar_panel)
 
@@ -729,7 +753,7 @@ func _build_ui() -> void:
     battle_body.add_child(combat_column)
 
     enemy_scroll = ScrollContainer.new()
-    enemy_scroll.custom_minimum_size = Vector2(0, 210)
+    enemy_scroll.custom_minimum_size = Vector2(0, 148 if web_touch else 210)
     enemy_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     enemy_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
     enemy_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
@@ -749,7 +773,7 @@ func _build_ui() -> void:
     selection_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     selection_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     selection_label.add_theme_font_size_override("font_size", 15)
-    selection_label.custom_minimum_size = Vector2(0, 30)
+    selection_label.custom_minimum_size = Vector2(0, 24 if web_touch else 30)
     combat_column.add_child(selection_label)
 
     notice_label = Label.new()
@@ -757,12 +781,14 @@ func _build_ui() -> void:
     notice_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     notice_label.add_theme_font_size_override("font_size", 11)
     combat_column.add_child(notice_label)
+    notice_label.visible = not web_touch
 
     # v1.6.10: stable dedicated prediction area. Core HUD values never morph on hover.
     prediction_panel = PanelContainer.new()
     prediction_panel.custom_minimum_size = Vector2(0, 72)
     prediction_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     combat_column.add_child(prediction_panel)
+    prediction_panel.visible = not web_touch
     var prediction_margin = MarginContainer.new()
     prediction_margin.add_theme_constant_override("margin_left", 10)
     prediction_margin.add_theme_constant_override("margin_top", 7)
@@ -808,32 +834,38 @@ func _build_ui() -> void:
     hover_hint.clip_text=true
     hover_hint.size_flags_horizontal=Control.SIZE_EXPAND_FILL
     hand_header.add_child(hover_hint)
+    hover_hint.visible = not web_touch
     var vfx_setting=OptionButton.new()
     for option in ["VFX 通常","VFX 軽量","VFX OFF"]:vfx_setting.add_item(option)
     vfx_setting.select(2-BattlePresentation.quality)
     vfx_setting.item_selected.connect(_on_vfx_quality_changed)
     hand_header.add_child(vfx_setting)
+    vfx_setting.visible = not web_touch
     var speed_setting := OptionButton.new()
     for option in ["1×", "2×", "3×"]: speed_setting.add_item(option)
     speed_setting.select(ux_preferences.speed - 1)
     speed_setting.tooltip_text = "アニメーションのみ高速化。戦闘処理・AI・通信には影響しません。"
     speed_setting.item_selected.connect(_on_vfx_speed_changed)
     hand_header.add_child(speed_setting)
+    speed_setting.visible = not web_touch
     var audio_settings := Button.new()
     audio_settings.text = "音量"
     audio_settings.pressed.connect(_open_audio_settings)
     hand_header.add_child(audio_settings)
+    audio_settings.visible = not web_touch
     var skip_vfx=Button.new();skip_vfx.text="スキップ"
     skip_vfx.pressed.connect(battle_presentation.clear_effects)
     hand_header.add_child(skip_vfx)
+    skip_vfx.visible = not web_touch
     turn_feedback_label = Label.new()
     turn_feedback_label.add_theme_font_size_override("font_size", 12)
     turn_feedback_label.add_theme_color_override("font_color", Color("c1d9e8"))
     turn_feedback_label.clip_text = true
     combat_column.add_child(turn_feedback_label)
+    turn_feedback_label.visible = not web_touch
 
     var hand_scroll = ScrollContainer.new()
-    hand_scroll.custom_minimum_size = Vector2(0, 236)
+    hand_scroll.custom_minimum_size = Vector2(0, 176 if web_touch else 236)
     hand_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
     hand_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
     combat_column.add_child(hand_scroll)
@@ -841,7 +873,7 @@ func _build_ui() -> void:
     # A straight horizontal row with scrolling avoids occluded card text.
     hand_box = Control.new()
     hand_box.name = "FlatHand"
-    hand_box.custom_minimum_size = Vector2(0, 236)
+    hand_box.custom_minimum_size = Vector2(0, 176 if web_touch else 236)
     hand_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     hand_scroll.add_child(hand_box)
     hand_box.resized.connect(_layout_hand_cards)
@@ -863,6 +895,12 @@ func _build_ui() -> void:
     cancel_button.text = "キャンセル"
     cancel_button.pressed.connect(_cancel_selection)
     quick_controls.add_child(cancel_button)
+    if web_touch:
+        mobile_detail_button = Button.new()
+        mobile_detail_button.text = "カード詳細"
+        mobile_detail_button.custom_minimum_size.y = 40
+        mobile_detail_button.pressed.connect(_show_selected_card_detail)
+        quick_controls.add_child(mobile_detail_button)
 
     var quick_spacer = Control.new()
     quick_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -872,11 +910,13 @@ func _build_ui() -> void:
     restart_button.text = "同じ戦闘を再試行"
     restart_button.pressed.connect(_on_restart_pressed)
     quick_controls.add_child(restart_button)
+    restart_button.visible = not web_touch
 
     return_setup_button = Button.new()
     return_setup_button.text = "戦闘設定"
     return_setup_button.pressed.connect(_on_return_to_setup_pressed)
     quick_controls.add_child(return_setup_button)
+    return_setup_button.visible = not web_touch
 
     seed_input = SpinBox.new()
     seed_input.min_value = 1
@@ -889,7 +929,7 @@ func _build_ui() -> void:
 
     end_turn_button = Button.new()
     end_turn_button.text = "ターン終了"
-    end_turn_button.custom_minimum_size = Vector2(0, 54)
+    end_turn_button.custom_minimum_size = Vector2(0, 44 if web_touch else 54)
     end_turn_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     end_turn_button.add_theme_font_size_override("font_size", 18)
     end_turn_button.pressed.connect(_on_end_turn_pressed)
@@ -898,7 +938,7 @@ func _build_ui() -> void:
 
     auto_battle_button = CheckButton.new()
     auto_battle_button.text = "オート戦闘 / OFFで手動"
-    auto_battle_button.custom_minimum_size.y = 38
+    auto_battle_button.custom_minimum_size.y = 40 if web_touch else 38
     auto_battle_button.toggled.connect(_on_auto_battle_toggled)
     turn_controls.add_child(auto_battle_button)
 
@@ -1922,7 +1962,7 @@ func _rebuild_enemy_buttons() -> void:
         enemy_box.add_child(cell)
 
         var button = Button.new()
-        button.custom_minimum_size = Vector2(0, 162)
+        button.custom_minimum_size = Vector2(0, 132 if OS.has_feature("web") else 162)
         button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
         button.add_theme_font_size_override("font_size", 15)
         button.pressed.connect(_on_enemy_pressed.bind(enemy_index))
@@ -1996,7 +2036,7 @@ func _refresh_ui() -> void:
     if battle.is_hand_selection_active():
         selection_label.text = "解決中: %s" % battle.get_hand_selection_prompt()
     elif selected_card.is_empty():
-        selection_label.text = "カードを選択してください。詳細はカードへマウスを合わせると表示されます。"
+        selection_label.text = ("カードをタップして選択 → ［カード詳細］で効果を確認" if OS.has_feature("web") else "カードを選択してください。詳細はカードへマウスを合わせると表示されます。")
     else:
         var target_type: String = battle.get_effective_target_type(selected_hand_index)
         if target_type == "enemy":
@@ -2007,6 +2047,8 @@ func _refresh_ui() -> void:
     var selected_target_type = "none" if selected_card.is_empty() else battle.get_effective_target_type(selected_hand_index)
     use_button.visible = (not battle.is_hand_selection_active()) and (not selected_card.is_empty()) and selected_target_type != "enemy"
     cancel_button.disabled = battle.is_hand_selection_active() or selected_card.is_empty()
+    if mobile_detail_button != null:
+        mobile_detail_button.disabled = selected_card.is_empty() or battle.is_hand_selection_active()
     end_turn_button.disabled = battle.is_hand_selection_active() or (not battle.resolving_card.is_empty()) or (not selected_card.is_empty()) or battle.combat_over
     restart_button.disabled = battle.is_hand_selection_active() or (not battle.resolving_card.is_empty())
     return_setup_button.disabled = battle.is_hand_selection_active() or (not battle.resolving_card.is_empty())
@@ -2019,7 +2061,7 @@ func _refresh_ui() -> void:
         if region_run_ui!=null and region_run_ui.locked(): button.disabled=true
 
     outcome_panel.visible = battle.combat_over
-    hand_box.get_parent().custom_minimum_size.y=236
+    hand_box.get_parent().custom_minimum_size.y=176 if OS.has_feature("web") else 236
     if battle.combat_over:
         var result_snapshot = battle.get_battle_result()
         var result_code = str(result_snapshot.get("result", "VICTORY" if battle.victory else "DEFEAT"))
@@ -2124,7 +2166,7 @@ func _rebuild_hand() -> void:
             "mana":_get_ui_icon("mana"),"attack":_get_ui_icon("attack"),"block":_get_ui_icon("block")
         },i==selected_hand_index,battle.is_hand_selection_active(),battle.current_mana>=battle.get_effective_cost(i))
         button.tooltip_text = str(card.get("text",""))
-        button.custom_minimum_size = Vector2(164, 190)
+        button.custom_minimum_size = Vector2(164, 164 if OS.has_feature("web") else 190)
         button.mark_weapon_condition(_weapon_trait_will_be_consumed(card,i))
         button.apply_target_preview(BattleCardPreview.inspect(battle,i,_preview_target()))
         button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
@@ -2153,7 +2195,7 @@ func _layout_hand_cards() -> void:
     if count == 0:
         return
     var card_width: float = 164.0
-    var card_height: float = 190.0
+    var card_height: float = 164.0 if OS.has_feature("web") else 190.0
     var gap: float = 10.0
     var span: float = card_width * float(count) + gap * float(maxi(0, count - 1))
     # Do not overlap cards even at 10-card hand size; ScrollContainer handles overflow.
