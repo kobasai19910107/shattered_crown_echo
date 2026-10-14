@@ -29,6 +29,26 @@ jobs:
             mkdir -p "$(dirname "$TARGET")"
             cp -a "$SOURCE" "$TARGET"
           fi
+      - name: Fetch licensed Japanese UI font
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p assets/fonts
+          curl --fail --location --retry 3 --silent --show-error \
+            'https://raw.githubusercontent.com/google/fonts/main/ofl/notosansjp/NotoSansJP%5Bwght%5D.ttf' \
+            --output assets/fonts/NotoSansJP.ttf
+          curl --fail --location --retry 3 --silent --show-error \
+            'https://raw.githubusercontent.com/google/fonts/main/ofl/notosansjp/OFL.txt' \
+            --output assets/fonts/OFL.txt
+          test "$(stat -c %s assets/fonts/NotoSansJP.ttf)" -gt 1000000
+          python3 - <<'PY'
+          from pathlib import Path
+          project = Path("project.godot")
+          text = project.read_text(encoding="utf-8")
+          assert "[gui]\\n" in text
+          text = text.replace("[gui]\\n", '[gui]\\ntheme/custom_font="res://assets/fonts/NotoSansJP.ttf"\\n', 1)
+          project.write_text(text, encoding="utf-8")
+          PY
       - name: Godot import
         run: godot --headless --path . --import
       - name: Main-scene smoke test (20 seconds)

@@ -13,6 +13,7 @@ window/size/viewport_height=900
 window/size/window_width_override=1280
 window/size/window_height_override=900
 window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
 
 [rendering]
 renderer/rendering_method="gl_compatibility"
@@ -21,5 +22,6 @@ textures/default_filters/use_nearest_mipmap_filter=false
 
 [gui]
 theme/default_font_multichannel_signed_distance_field=true
+theme/default_theme_scale=1.25
 
 ; Web migration: no EOS GDExtension/autoload. Windows source ZIP unchanged.
