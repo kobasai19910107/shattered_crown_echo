@@ -17,6 +17,18 @@ jobs:
       image: barichello/godot-ci:4.7.2
     steps:
       - uses: actions/checkout@v4
+      - name: Install matching Godot export templates
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --version
+          SOURCE=/root/.local/share/godot/export_templates/4.7.2.stable
+          TARGET="$HOME/.local/share/godot/export_templates/4.7.2.stable"
+          if [ ! -d "$TARGET" ]; then
+            test -d "$SOURCE"
+            mkdir -p "$(dirname "$TARGET")"
+            cp -a "$SOURCE" "$TARGET"
+          fi
       - name: Godot import
         run: godot --headless --path . --import
       - name: Main-scene smoke test (20 seconds)
