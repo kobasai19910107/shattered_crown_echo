@@ -410,7 +410,22 @@ func _cancel_generation() -> void:
     if generation_job != null:
         generation_job.cancel()
 
+func _apply_web_readability_theme() -> void:
+    if not OS.has_feature("web"):
+        return
+    # Shared font-size is controlled by the Web-only virtual resolution.
+    # Preserve special in-game card and rarity colors where they were explicitly set.
+    var readable_theme: Theme = Theme.new()
+    readable_theme.set_color("font_color", "Label", Color("ededed"))
+    readable_theme.set_color("font_color", "Button", Color("f5f5f5"))
+    readable_theme.set_color("font_hover_color", "Button", Color("ffffff"))
+    readable_theme.set_color("font_pressed_color", "Button", Color("ffffff"))
+    readable_theme.set_color("font_disabled_color", "Button", Color("a2a7ad"))
+    readable_theme.set_color("default_color", "RichTextLabel", Color("ededed"))
+    theme = readable_theme
+
 func _ready() -> void:
+    _apply_web_readability_theme()
     ux_preferences = UXPrefsScript.new()
     ux_preferences.load_local()
     BattlePresentation.quality = ux_preferences.vfx_quality

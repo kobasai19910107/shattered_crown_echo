@@ -48,6 +48,7 @@ func build(owner_node) -> void:
     page_scroll=ScrollContainer.new()
     page_scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED
     page_scroll.size_flags_vertical=Control.SIZE_EXPAND_FILL
+    page_scroll.size_flags_horizontal=Control.SIZE_EXPAND_FILL
     add_child(page_scroll)
     content=VBoxContainer.new()
     content.size_flags_horizontal=Control.SIZE_EXPAND_FILL
@@ -55,7 +56,7 @@ func build(owner_node) -> void:
     content.add_theme_constant_override("separation",6)
     add_child(content)
     header=Label.new()
-    header.add_theme_font_size_override("font_size",22)
+    header.add_theme_font_size_override("font_size",26 if OS.has_feature("web") else 22)
     content.add_child(header)
     seed=SpinBox.new()
     seed.min_value=1
@@ -75,7 +76,7 @@ func locked() -> bool:
 func button(text: String, action: Callable, parent: Node = null) -> Button:
     var b=Button.new()
     b.text=text
-    b.custom_minimum_size.y=38
+    b.custom_minimum_size.y=54 if OS.has_feature("web") else 38
     b.pressed.connect(func():
         if animation_busy or host.generation_job!=null: return
         action.call()
@@ -113,8 +114,10 @@ func render() -> void:
             child.queue_free()
     var state: Dictionary=run.state
     var in_hub: bool=str(state.phase)=="hub"
-    page_scroll.visible=not in_hub
-    var destination: Node=self if in_hub else page_scroll
+    # Web touch: keep hub pages scrollable when controls exceed short landscape screens.
+    var web_touch: bool=OS.has_feature("web")
+    page_scroll.visible=web_touch or not in_hub
+    var destination: Node=page_scroll if web_touch or not in_hub else self
     if content.get_parent()!=destination:content.reparent(destination)
     var region_index: int=int(state.get("active_region",0))
     var boss_count: int=int(state.region_progress[region_index]) if state.has("region_progress") else int(state.bosses)
@@ -246,7 +249,7 @@ func _hub_button(title: String,page: String,parent: Node) -> Button:
     b.toggle_mode=true
     b.set_pressed_no_signal(hub_page==page)
     b.disabled=not run.state.forge_pending.is_empty() and page!="forge"
-    b.custom_minimum_size=Vector2(164,44)
+    b.custom_minimum_size=Vector2(172,58) if OS.has_feature("web") else Vector2(164,44)
     return b
 
 func _build_hub_navigation(state: Dictionary) -> void:
@@ -258,7 +261,7 @@ func _build_hub_navigation(state: Dictionary) -> void:
         _hub_button(str(entry[0]),str(entry[1]),nav)
     var online=button("2人協力ロビー",func():host._on_online_open(),nav)
     online.name="HubNav_coop"
-    online.custom_minimum_size=Vector2(164,44)
+    online.custom_minimum_size=Vector2(172,58) if OS.has_feature("web") else Vector2(164,44)
     online.disabled=not state.forge_pending.is_empty()
     var subtitle=Label.new()
     subtitle.name="HubPageTitle"
@@ -269,13 +272,13 @@ func _build_hub_navigation(state: Dictionary) -> void:
 func _hub_home_destination(text: String,description: String,page: String,parent: Node) -> void:
     var frame=PanelContainer.new()
     frame.size_flags_horizontal=Control.SIZE_EXPAND_FILL
-    frame.custom_minimum_size.y=118
+    frame.custom_minimum_size.y=134 if OS.has_feature("web") else 118
     parent.add_child(frame)
     var inner=VBoxContainer.new()
     inner.add_theme_constant_override("separation",6)
     frame.add_child(inner)
     var go=button(text,func():hub_page=page,inner)
-    go.custom_minimum_size.y=46
+    go.custom_minimum_size.y=58 if OS.has_feature("web") else 46
     go.disabled=not run.state.forge_pending.is_empty() and page!="forge"
     paragraph(description,inner)
 
