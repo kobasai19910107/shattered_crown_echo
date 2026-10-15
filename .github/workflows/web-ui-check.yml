@@ -65,6 +65,10 @@ jobs:
         env:
           SCE_WEB_UI_ISOLATED_TEST: "1"
         run: godot --headless --path . --script res://tests/web_ui_p4_test.gd
+      - name: P5 route, reward, services and defeat confirmation regression
+        env:
+          SCE_WEB_UI_ISOLATED_TEST: "1"
+        run: godot --headless --path . --script res://tests/web_ui_p5_test.gd
       - name: Main-scene smoke test (20 seconds)
         shell: bash
         run: |

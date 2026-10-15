@@ -252,9 +252,13 @@ func _tap_depart() -> void:
             host.region_run_ui.solo_selected_stage = 0
             host.region_run_ui.render()
             host.tab_container.current_tab = host.region_run_ui.get_index()
-            host.web_ui_shell.close_shell()
+            if host.web_adventure_screen != null:
+                host._sync_web_campaign()
+            else:
+                # P3 test fixture and old development screens have no P5 host.
+                host.web_ui_shell.close_shell()
         else:
-            status_label.text = "ラン開始に失敗しました。現在の選択は保持されます。"
+            status_label.text = "ラン開始に失敗しました。現在の選択は保持されます."
             launch_button.text = "▶ R%d - B%02d へ出発（2回タップで確定）" % [region+1,stage]
 
 func _back_to_hub() -> void:

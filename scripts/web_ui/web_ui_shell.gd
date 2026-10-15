@@ -126,7 +126,7 @@ func _show_current() -> void:
             page.call_deferred("refresh")
     if route_label != null:
         route_label.text = {"hub":"拠点","equipment":"装備・倉庫","forge":"鍛冶屋","merchant":"商人",
-            "solo":"ソロ出発","battle":"戦闘","route":"道の選択","reward":"報酬",
+            "solo":"ソロ出発","battle":"戦闘","adventure":"冒険","route":"道の選択","reward":"報酬",
             "event":"イベント","rest":"休憩","victory":"勝利","defeat":"敗北"}.get(router.current_route,"Web UI")
 
 func _refresh_orientation() -> void:

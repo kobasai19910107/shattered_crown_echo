@@ -2,7 +2,7 @@ class_name WebUIRouter
 extends RefCounted
 
 signal route_changed(route: String)
-const ROUTES = ["hub","equipment","forge","merchant","solo","battle","route","reward","event","rest","victory","defeat"]
+const ROUTES = ["hub","equipment","forge","merchant","solo","battle","adventure","route","reward","event","rest","victory","defeat"]
 var current_route: String = ""
 var history: Array[String] = []
 

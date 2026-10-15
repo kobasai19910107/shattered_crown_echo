@@ -23,6 +23,7 @@ const WebSoloDepartureScript = preload("res://scripts/web_ui/web_solo_departure.
 const WebEquipmentWarehouseScript = preload("res://scripts/web_ui/web_equipment_warehouse.gd")
 const WebForgeScreenScript = preload("res://scripts/web_ui/web_forge_screen.gd")
 const WebHubMerchantScript = preload("res://scripts/web_ui/web_hub_merchant.gd")
+const WebAdventureScreenScript = preload("res://scripts/web_ui/web_adventure_screen.gd")
 
 const ATTRIBUTES := ["ALL", "物理", "炎", "水", "雷", "地", "光", "闇", "毒", "秘術", "風"]
 const WEAPONS := ["ALL", "片手剣", "レイピア", "短剣", "大剣", "魔法剣", "刀"]
@@ -44,6 +45,7 @@ var web_solo_screen
 var web_equipment_screen
 var web_forge_screen
 var web_merchant_screen
+var web_adventure_screen
 
 var player_label: Label
 var piles_label: Label
@@ -510,6 +512,9 @@ func _ready() -> void:
         web_merchant_screen = WebHubMerchantScript.new()
         web_merchant_screen.bind_host(self)
         web_ui_shell.register_screen("merchant",web_merchant_screen)
+        web_adventure_screen = WebAdventureScreenScript.new()
+        web_adventure_screen.bind_host(self)
+        web_ui_shell.register_screen("adventure",web_adventure_screen)
         web_ui_shell.navigation_allowed = func() -> bool:
             return region_run_ui != null and region_run_ui.run.state.forge_pending.is_empty()
 
@@ -570,7 +575,7 @@ func _continue_from_title() -> void:
         region_run_ui.present_battle()
     else:
         tab_container.current_tab=region_run_ui.get_index()
-        _activate_web_hub()
+        _sync_web_campaign()
 
 func _start_from_title() -> void:
     if region_run_ui==null:return
@@ -667,6 +672,20 @@ func _open_legacy_hub_page(page: String) -> void:
     tab_container.current_tab = region_run_ui.get_index()
     if web_ui_shell != null:
         web_ui_shell.close_shell()
+
+func _sync_web_campaign() -> void:
+    # A Web-only view of the existing CampaignController phase.
+    # No duplicate run logic or implicit saving is performed here.
+    if web_ui_shell == null or region_run_ui == null:
+        return
+    var phase: String=str(region_run_ui.run.state.phase)
+    if phase=="hub":
+        _activate_web_hub()
+    elif phase=="battle":
+        region_run_ui.present_battle()
+    elif phase in ["route","reward","service","defeat"]:
+        if web_adventure_screen != null and web_ui_shell.activate("adventure"):
+            web_adventure_screen.refresh()
 
 func _activate_web_battle() -> void:
     if not OS.has_feature("web") or web_ui_shell == null or web_battle_screen == null:
@@ -2172,10 +2191,11 @@ func _refresh_ui() -> void:
     log_box.scroll_to_line(max(0, battle.logs.size() - 1))
     _refresh_playtest_ui()
     if web_ui_shell != null and web_ui_shell.visible:
-        if web_battle_screen != null and (region_run_ui == null or str(region_run_ui.run.state.phase) == "battle" or tab_container.current_tab == 0):
-            web_battle_screen.refresh()
+        if region_run_ui == null or str(region_run_ui.run.state.phase) == "battle" or tab_container.current_tab == 0:
+            if web_battle_screen != null and web_ui_shell.router.current_route == "battle":
+                web_battle_screen.refresh()
         else:
-            web_ui_shell.close_shell()
+            _sync_web_campaign()
     if battle.is_salvage_selection_active():
         _show_salvage_selection()
     elif pile_overlay_close != null:
