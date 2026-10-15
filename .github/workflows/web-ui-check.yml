@@ -1,0 +1,80 @@
+name: Web UI P1 validation (feature only)
+on:
+  push:
+    branches: [feature/web-ui-v0-6]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: sce-web-ui-dev
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    container:
+      image: barichello/godot-ci:4.7.2
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install matching Godot export templates
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --version
+          SOURCE=/root/.local/share/godot/export_templates/4.7.2.stable
+          TARGET="$HOME/.local/share/godot/export_templates/4.7.2.stable"
+          if [ ! -d "$TARGET" ]; then
+            test -d "$SOURCE"
+            mkdir -p "$(dirname "$TARGET")"
+            cp -a "$SOURCE" "$TARGET"
+          fi
+      - name: Fetch licensed Japanese UI font
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v curl >/dev/null 2>&1 || ! command -v python3 >/dev/null 2>&1; then
+            apt-get update -qq
+            DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends curl ca-certificates python3
+          fi
+          mkdir -p assets/fonts
+          curl --fail --location --retry 3 --silent --show-error \
+            'https://raw.githubusercontent.com/google/fonts/main/ofl/notosansjp/NotoSansJP%5Bwght%5D.ttf' \
+            --output assets/fonts/NotoSansJP.ttf
+          curl --fail --location --retry 3 --silent --show-error \
+            'https://raw.githubusercontent.com/google/fonts/main/ofl/notosansjp/OFL.txt' \
+            --output assets/fonts/OFL.txt
+          test "$(stat -c %s assets/fonts/NotoSansJP.ttf)" -gt 1000000
+          python3 - <<'PY'
+          from pathlib import Path
+          project = Path("project.godot")
+          text = project.read_text(encoding="utf-8")
+          assert "[gui]" in text
+          text = text.replace("[gui]", '[gui]' + chr(10) + 'theme/custom_font="res://assets/fonts/NotoSansJP.ttf"', 1)
+          project.write_text(text, encoding="utf-8")
+          PY
+      - name: Godot import
+        run: godot --headless --path . --import
+      - name: P1 touch state and navigation test
+        run: godot --headless --path . --script res://tests/web_ui_p1_test.gd
+      - name: Main-scene smoke test (20 seconds)
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 20s godot --headless --path . --quit-after 100 || status=$?
+          if [ "${status:-0}" = "124" ]; then echo "Timed out during startup"; exit 1; fi
+          test "${status:-0}" = "0"
+      - name: Export Web (single-threaded, no native extensions)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/web
+          godot --headless --path . --export-release Web build/web/index.html
+          test -s build/web/index.html
+          test -n "$(find build/web -name '*.wasm' -print -quit)"
+          cp assets/fonts/OFL.txt build/web/FONT_LICENSE_SIL_OFL.txt
+          touch build/web/.nojekyll
+      - name: Archive Web candidate without publishing
+        uses: actions/upload-artifact@v4
+        with:
+          name: sce-web-ui-dev-candidate
+          path: build/web
+          retention-days: 7

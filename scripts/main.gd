@@ -16,6 +16,7 @@ const Step8RollerScript = preload("res://scripts/step8_equipment_roller.gd")
 const InitialDeckGeneratorScript = preload("res://scripts/initial_deck_generator.gd")
 const InitialDeckGenerationJobScript = preload("res://scripts/initial_deck_generation_job.gd")
 const GameTitleScreenScript = preload("res://scripts/game_title_screen.gd")
+const WebUIShellScript = preload("res://scripts/web_ui/web_ui_shell.gd")
 
 const ATTRIBUTES := ["ALL", "物理", "炎", "水", "雷", "地", "光", "闇", "毒", "秘術", "風"]
 const WEAPONS := ["ALL", "片手剣", "レイピア", "短剣", "大剣", "魔法剣", "刀"]
@@ -30,6 +31,7 @@ var current_enemy_preset: String = "slime_duo"
 var pending_loadout_snapshot: Dictionary = {}
 var current_loadout_snapshot: Dictionary = {}
 var tab_container: TabContainer
+var web_ui_shell: Control
 
 var player_label: Label
 var piles_label: Label
@@ -474,6 +476,10 @@ func _ready() -> void:
     coop_ui.build(self)
     if str(region_run_ui.run.state.phase)!="battle": tab_container.current_tab=region_run_ui.get_index()
     _show_title_screen()
+    if OS.has_feature("web"):
+        # P1 compatibility mode: no Web screens are activated before P2/P3.
+        web_ui_shell = WebUIShellScript.new()
+        add_child(web_ui_shell)
 
 # Title is a non-destructive overlay. The existing campaign controller still
 # handles load, migration, combat checkpoints, and the save envelope.
