@@ -283,9 +283,14 @@ func _return_to_campaign() -> void:
     host.region_run_ui.sync_battle()
     host.region_run_ui.render()
     host.tab_container.current_tab = host.region_run_ui.get_index()
-    if host.web_adventure_screen != null:
+    # While combat is still active, this button is an explicit escape
+    # to the legacy run overview. Reopening the Web battle would trap users.
+    var phase: String=str(host.region_run_ui.run.state.phase)
+    if phase=="battle":
+        host.web_ui_shell.close_shell()
+    elif host.web_adventure_screen != null:
         host._sync_web_campaign()
     else:
         host.web_ui_shell.close_shell()
-        if str(host.region_run_ui.run.state.phase) == "hub":
+        if phase=="hub":
             host._activate_web_hub()
