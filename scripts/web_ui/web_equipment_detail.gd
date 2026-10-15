@@ -84,6 +84,7 @@ func view_card(index: int) -> void:
     viewed_index = index
     var id: String = str(current_cards[index])
     formal.text = analyzer.card_description(id)
+    # Card details are separate from every item confirmation action.
     for child in card_buttons.get_children():
         if child is Button:
-            child.set_pressed_no_signal(false) if child.toggle_mode else null
+            child.tooltip_text = "カードの正式効果を確認"
