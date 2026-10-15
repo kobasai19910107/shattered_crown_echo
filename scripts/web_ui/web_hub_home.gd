@@ -103,7 +103,10 @@ func _open_route(route: String) -> void:
     if not run.state.forge_pending.is_empty() and route != "forge":
         return
     if route == "solo":
-        host._activate_web_solo()
+        # This is already an exclusively Web-registered view; switching
+        # registered pages must not depend on the platform feature flag.
+        if host.web_ui_shell.activate("solo") and host.web_solo_screen != null:
+            host.web_solo_screen.refresh()
     else:
         # P4 will replace these with registered Web screens. The legacy
         # facilities remain operational and provide a return-to-Web button.
