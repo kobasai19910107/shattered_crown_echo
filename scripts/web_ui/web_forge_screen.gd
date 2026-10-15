@@ -64,6 +64,8 @@ func _ready() -> void:
     dialog.title = "装備分解の最終確認"
     dialog.ok_button_text = "分解する"
     add_child(dialog)
+    dialog.popup_hide.connect(_on_dismantle_dialog_hidden)
+
 
 func _wipe(node: Node) -> void:
     for child in node.get_children():
@@ -217,6 +219,13 @@ func _tap_operation(action: String, slot: int) -> void:
             dialog.popup_centered(Vector2i(570,250))
         else:
             _finish_operation(uid,action,slot,snapshot)
+
+func _on_dismantle_dialog_hidden() -> void:
+    call_deferred("_release_hidden_dismantle_dialog")
+
+func _release_hidden_dismantle_dialog() -> void:
+    if _gate()!=null and _gate().commit_pending and _gate().selected_id.begins_with("forge/"):
+        _cancel_pending_dialog()
 
 func _cancel_pending_dialog() -> void:
     if _gate() != null:
