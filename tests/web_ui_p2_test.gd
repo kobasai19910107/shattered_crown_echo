@@ -62,6 +62,13 @@ func _run() -> void:
         check(before != JSON.stringify(game.battle.export_region1_state()),"confirmed card changes battle state")
     screen.refresh()
     check(screen.hand_row.get_child_count() == game.battle.hand.size(),"hand refreshes after action")
+    # Existing BattlePresentation blocks input while its short card-use
+    # animation runs. Wait for that lock to clear before tapping End Turn.
+    for frame in range(45):
+        if not game.region_run_ui.animation_busy:
+            break
+        await process_frame
+    check(not game.region_run_ui.animation_busy,"card animation unlocks touch actions")
     if not game.battle.combat_over and not game.battle.is_hand_selection_active():
         var turn: int = game.battle.turn_number
         screen._end_turn()
