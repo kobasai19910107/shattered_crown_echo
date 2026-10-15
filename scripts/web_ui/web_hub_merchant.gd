@@ -61,6 +61,8 @@ func _ready() -> void:
     sale_dialog.title = "装備売却の最終確認"
     sale_dialog.ok_button_text = "売却する"
     add_child(sale_dialog)
+    sale_dialog.popup_hide.connect(_on_sale_dialog_hidden)
+
 
 func _button(parent: Node, label: String, callback: Callable, enabled: bool = true) -> Button:
     var btn = Button.new()
@@ -187,6 +189,13 @@ func _tap_sell(uid: String) -> void:
         sale_dialog.confirmed.connect(_finalize_sale.bind(uid,snapshot,price),CONNECT_ONE_SHOT)
         sale_dialog.canceled.connect(_abort_sale,CONNECT_ONE_SHOT)
         sale_dialog.popup_centered(Vector2i(570,250))
+
+func _on_sale_dialog_hidden() -> void:
+    call_deferred("_release_hidden_sale_dialog")
+
+func _release_hidden_sale_dialog() -> void:
+    if _gate()!=null and _gate().commit_pending and _gate().selected_id.begins_with("merchant/sell/"):
+        _abort_sale()
 
 func _abort_sale() -> void:
     if _gate() != null:
