@@ -61,6 +61,10 @@ jobs:
         env:
           SCE_WEB_UI_ISOLATED_TEST: "1"
         run: godot --headless --path . --script res://tests/web_ui_p3_test.gd
+      - name: P4 warehouse, forge and merchant safety regression
+        env:
+          SCE_WEB_UI_ISOLATED_TEST: "1"
+        run: godot --headless --path . --script res://tests/web_ui_p4_test.gd
       - name: Main-scene smoke test (20 seconds)
         shell: bash
         run: |
