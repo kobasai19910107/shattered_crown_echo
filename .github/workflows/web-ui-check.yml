@@ -57,6 +57,10 @@ jobs:
         run: godot --headless --path . --script res://tests/web_ui_p1_test.gd
       - name: P2 interactive battle regression
         run: godot --headless --path . --script res://tests/web_ui_p2_test.gd
+      - name: P3 hub and solo departure regression
+        env:
+          SCE_WEB_UI_ISOLATED_TEST: "1"
+        run: godot --headless --path . --script res://tests/web_ui_p3_test.gd
       - name: Main-scene smoke test (20 seconds)
         shell: bash
         run: |

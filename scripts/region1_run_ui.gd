@@ -259,6 +259,8 @@ func _build_hub_navigation(state: Dictionary) -> void:
     content.add_child(nav)
     for entry in [["拠点ホーム","home"],["装備・倉庫","equipment"],["鍛冶屋","forge"],["商人","merchant"],["ソロ出発","solo"]]:
         _hub_button(str(entry[0]),str(entry[1]),nav)
+    if OS.has_feature("web") and host.web_ui_shell != null:
+        button("Web拠点へ戻る",host._activate_web_hub,nav).disabled=not state.forge_pending.is_empty()
     var online=button("2人協力ロビー",func():host._on_online_open(),nav)
     online.name="HubNav_coop"
     online.custom_minimum_size=Vector2(172,58) if OS.has_feature("web") else Vector2(164,44)

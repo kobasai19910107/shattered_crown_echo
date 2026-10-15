@@ -18,6 +18,8 @@ const InitialDeckGenerationJobScript = preload("res://scripts/initial_deck_gener
 const GameTitleScreenScript = preload("res://scripts/game_title_screen.gd")
 const WebUIShellScript = preload("res://scripts/web_ui/web_ui_shell.gd")
 const WebBattleScreenScript = preload("res://scripts/web_ui/web_battle_screen.gd")
+const WebHubHomeScript = preload("res://scripts/web_ui/web_hub_home.gd")
+const WebSoloDepartureScript = preload("res://scripts/web_ui/web_solo_departure.gd")
 
 const ATTRIBUTES := ["ALL", "物理", "炎", "水", "雷", "地", "光", "闇", "毒", "秘術", "風"]
 const WEAPONS := ["ALL", "片手剣", "レイピア", "短剣", "大剣", "魔法剣", "刀"]
@@ -34,6 +36,8 @@ var current_loadout_snapshot: Dictionary = {}
 var tab_container: TabContainer
 var web_ui_shell
 var web_battle_screen
+var web_hub_screen
+var web_solo_screen
 
 var player_label: Label
 var piles_label: Label
@@ -485,10 +489,18 @@ func _ready() -> void:
         web_battle_screen = WebBattleScreenScript.new()
         web_battle_screen.bind_host(self)
         web_ui_shell.register_screen("battle",web_battle_screen)
+        web_hub_screen = WebHubHomeScript.new()
+        web_hub_screen.bind_host(self)
+        web_ui_shell.register_screen("hub",web_hub_screen)
+        web_solo_screen = WebSoloDepartureScript.new()
+        web_solo_screen.bind_host(self)
+        web_ui_shell.register_screen("solo",web_solo_screen)
 
 # Title is a non-destructive overlay. The existing campaign controller still
 # handles load, migration, combat checkpoints, and the save envelope.
 func _show_title_screen() -> void:
+    if web_ui_shell != null:
+        web_ui_shell.close_shell()
     if is_instance_valid(game_title_screen):
         game_title_screen.queue_free()
     game_title_screen=GameTitleScreenScript.new()
@@ -541,6 +553,7 @@ func _continue_from_title() -> void:
         region_run_ui.present_battle()
     else:
         tab_container.current_tab=region_run_ui.get_index()
+        _activate_web_hub()
 
 func _start_from_title() -> void:
     if region_run_ui==null:return
@@ -575,6 +588,7 @@ func _start_from_title() -> void:
     region_run_ui.render()
     _hide_title_screen()
     tab_container.current_tab=region_run_ui.get_index()
+    _activate_web_hub()
 
 func _on_online_open() -> void:
     if generation_job!=null: return
@@ -593,6 +607,36 @@ func _setup_hover_preview_timers() -> void:
     hover_clear_timer.wait_time = 0.12
     hover_clear_timer.timeout.connect(_clear_hover_preview_delayed)
     add_child(hover_clear_timer)
+
+func _activate_web_hub() -> void:
+    if not OS.has_feature("web") or web_ui_shell == null or web_hub_screen == null:
+        return
+    if region_run_ui == null or str(region_run_ui.run.state.phase) != "hub":
+        return
+    if not region_run_ui.run.state.forge_pending.is_empty():
+        _open_legacy_hub_page("forge")
+        return
+    web_ui_shell.activate("hub")
+    web_hub_screen.refresh()
+
+func _activate_web_solo() -> void:
+    if not OS.has_feature("web") or web_ui_shell == null or web_solo_screen == null:
+        return
+    if region_run_ui == null or str(region_run_ui.run.state.phase) != "hub":
+        return
+    if not region_run_ui.run.state.forge_pending.is_empty():
+        _open_legacy_hub_page("forge")
+        return
+    web_ui_shell.activate("solo")
+    web_solo_screen.refresh()
+
+func _open_legacy_hub_page(page: String) -> void:
+    if region_run_ui == null or str(region_run_ui.run.state.phase) != "hub":
+        return
+    region_run_ui.open_hub_page(page)
+    tab_container.current_tab = region_run_ui.get_index()
+    if web_ui_shell != null:
+        web_ui_shell.close_shell()
 
 func _activate_web_battle() -> void:
     if not OS.has_feature("web") or web_ui_shell == null or web_battle_screen == null:
