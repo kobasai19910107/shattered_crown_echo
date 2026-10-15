@@ -17,6 +17,7 @@ const InitialDeckGeneratorScript = preload("res://scripts/initial_deck_generator
 const InitialDeckGenerationJobScript = preload("res://scripts/initial_deck_generation_job.gd")
 const GameTitleScreenScript = preload("res://scripts/game_title_screen.gd")
 const WebUIShellScript = preload("res://scripts/web_ui/web_ui_shell.gd")
+const WebBattleScreenScript = preload("res://scripts/web_ui/web_battle_screen.gd")
 
 const ATTRIBUTES := ["ALL", "物理", "炎", "水", "雷", "地", "光", "闇", "毒", "秘術", "風"]
 const WEAPONS := ["ALL", "片手剣", "レイピア", "短剣", "大剣", "魔法剣", "刀"]
@@ -31,7 +32,8 @@ var current_enemy_preset: String = "slime_duo"
 var pending_loadout_snapshot: Dictionary = {}
 var current_loadout_snapshot: Dictionary = {}
 var tab_container: TabContainer
-var web_ui_shell: Control
+var web_ui_shell
+var web_battle_screen
 
 var player_label: Label
 var piles_label: Label
@@ -480,6 +482,9 @@ func _ready() -> void:
         # P1 compatibility mode: no Web screens are activated before P2/P3.
         web_ui_shell = WebUIShellScript.new()
         add_child(web_ui_shell)
+        web_battle_screen = WebBattleScreenScript.new()
+        web_battle_screen.bind_host(self)
+        web_ui_shell.register_screen("battle",web_battle_screen)
 
 # Title is a non-destructive overlay. The existing campaign controller still
 # handles load, migration, combat checkpoints, and the save envelope.
@@ -588,6 +593,12 @@ func _setup_hover_preview_timers() -> void:
     hover_clear_timer.wait_time = 0.12
     hover_clear_timer.timeout.connect(_clear_hover_preview_delayed)
     add_child(hover_clear_timer)
+
+func _activate_web_battle() -> void:
+    if not OS.has_feature("web") or web_ui_shell == null or web_battle_screen == null:
+        return
+    web_ui_shell.activate("battle")
+    web_battle_screen.refresh()
 
 func _show_selected_card_detail() -> void:
     if selected_hand_index < 0 or selected_hand_index >= hand_box.get_child_count():
@@ -2086,6 +2097,11 @@ func _refresh_ui() -> void:
     log_box.text = "\n".join(battle.logs)
     log_box.scroll_to_line(max(0, battle.logs.size() - 1))
     _refresh_playtest_ui()
+    if web_ui_shell != null and web_ui_shell.visible:
+        if web_battle_screen != null and (region_run_ui == null or str(region_run_ui.run.state.phase) == "battle" or tab_container.current_tab == 0):
+            web_battle_screen.refresh()
+        else:
+            web_ui_shell.close_shell()
     if battle.is_salvage_selection_active():
         _show_salvage_selection()
     elif pile_overlay_close != null:

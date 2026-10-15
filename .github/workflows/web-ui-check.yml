@@ -55,6 +55,8 @@ jobs:
         run: godot --headless --path . --import
       - name: P1 touch state and navigation test
         run: godot --headless --path . --script res://tests/web_ui_p1_test.gd
+      - name: P2 interactive battle regression
+        run: godot --headless --path . --script res://tests/web_ui_p2_test.gd
       - name: Main-scene smoke test (20 seconds)
         shell: bash
         run: |

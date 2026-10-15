@@ -512,6 +512,7 @@ func present_battle() -> void:
     host._rebuild_enemy_buttons()
     host.tab_container.current_tab=0
     host._refresh_ui()
+    host._activate_web_battle()
 
 func sync_battle() -> void:
     if syncing or str(run.state.phase)!="battle" or host.battle!=run.battle: return
