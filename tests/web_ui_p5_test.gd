@@ -100,6 +100,7 @@ func _run() -> void:
     next=controller.state.duplicate(true)
     next.phase="service"
     next.run.kind="shop"
+    next.run.gold=900 # Explicitly fund a legal 280G run-merchant purchase.
     next.run["shop_npc"]="merchant"
     next.run.stock=[test_item.duplicate(true)]
     verify(controller._commit(next),"create run merchant fixture")
