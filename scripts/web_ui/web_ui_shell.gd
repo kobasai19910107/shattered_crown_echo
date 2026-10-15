@@ -8,6 +8,7 @@ signal screen_changed(route: String)
 var router = RouterScript.new()
 var selection = GateScript.new()
 var screens: Dictionary = {}
+var navigation_allowed: Callable
 var page_host: Control
 var route_label: Label
 var rotation_hint: ColorRect
@@ -99,6 +100,8 @@ func activate(route: String) -> bool:
 func go_back() -> bool:
     if selection.commit_pending or router.history.is_empty():
         return false
+    if navigation_allowed.is_valid() and not bool(navigation_allowed.call()):
+        return false
     var previous = router.history.back()
     if not screens.has(previous):
         return false
@@ -119,6 +122,8 @@ func _show_current() -> void:
     for key in screens:
         var page: Control = screens[key]
         page.visible = key == router.current_route
+        if page.visible and page.has_method("refresh"):
+            page.call_deferred("refresh")
     if route_label != null:
         route_label.text = {"hub":"拠点","equipment":"装備・倉庫","forge":"鍛冶屋","merchant":"商人",
             "solo":"ソロ出発","battle":"戦闘","route":"道の選択","reward":"報酬",
