@@ -56,7 +56,11 @@ try {
       // A disposable browser profile has no save, so the title page
       // offers "最初から". Tap its center and capture the actual Web hub.
       await page.touchscreen.tap(Math.round(device.width/2),Math.round(device.height*0.615));
-      await page.waitForTimeout(1800);
+      await page.waitForTimeout(700);
+      await page.screenshot({path:path.join(output,device.label+"-new-game-confirmation.png"),fullPage:false});
+      // Godot asks for a second, explicit confirmation of a new run.
+      await page.touchscreen.tap(Math.round(device.width/2)+30,Math.round(device.height/2)+15);
+      await page.waitForTimeout(2800);
       await page.screenshot({path:path.join(output,device.label+"-after-new-game.png"),fullPage:false});
     }
     const noOverflow=result.document.scrollWidth<=device.width+2&&result.document.scrollHeight<=device.height+2;
