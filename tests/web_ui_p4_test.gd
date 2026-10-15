@@ -114,6 +114,15 @@ func _run() -> void:
     else:
         check(false,"random card reroll eligible on test item")
 
+    var before_dismantle: String = FileAccess.get_file_as_string(ui.run.save_path)
+    forge._tap_operation("dismantle",-1)
+    check(FileAccess.get_file_as_string(ui.run.save_path)==before_dismantle,"dismantle first tap is read-only")
+    forge._tap_operation("dismantle",-1)
+    check(ui.run.state.inventory.has(old_uid) and shell.selection.commit_pending,"dismantle requires final confirmation")
+    forge.dialog.hide()
+    for frame in range(3): await process_frame
+    check(ui.run.state.inventory.has(old_uid) and not shell.selection.commit_pending,"closing dismantle dialog cannot destroy gear or lock UI")
+
     check(shell.activate("merchant"),"merchant route")
     merchant.refresh()
     check(ui.run.state.hub_stock.size()==3,"merchant first visit initializes three stock items")
@@ -138,6 +147,12 @@ func _run() -> void:
     merchant._tap_sell(old_uid)
     check(sale_before==JSON.stringify(ui.run.state),"second sale tap only opens destructive confirmation")
     check(shell.selection.commit_pending,"sale confirmation holds pending lock")
+    merchant.sale_dialog.hide()
+    for frame in range(3): await process_frame
+    check(JSON.stringify(ui.run.state)==sale_before and not shell.selection.commit_pending,"closing sale dialog preserves item and unlocks navigation")
+    merchant._tap_sell(old_uid)
+    merchant._tap_sell(old_uid)
+    check(shell.selection.commit_pending,"repeated sale still requires final dialog confirmation")
     var sale_price: int=ui.run.hub_sell_price(ui.run.state.inventory[old_uid])
     merchant._finalize_sale(old_uid,sell_snapshot,sale_price)
     check(not ui.run.state.inventory.has(old_uid),"explicit sale confirmation deletes exactly chosen item")
