@@ -92,3 +92,43 @@ jobs:
           name: sce-web-ui-dev-candidate
           path: build/web
           retention-days: 7
+
+  browser-layout:
+    name: P6 landscape browser smoke and screenshots
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          name: sce-web-ui-dev-candidate
+          path: site
+      - name: Install Playwright Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Smoke Web layout in browser
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory site >/tmp/sce-browser-http.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" || true' EXIT
+          for i in {1..30}; do
+            if curl --fail -s http://127.0.0.1:8765/index.html >/dev/null; then break; fi
+            sleep 1
+          done
+          node tests/web_ui_browser_check.mjs
+      - name: Upload screenshots and metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sce-p6-browser-evidence
+          path: browser-artifacts
+          if-no-files-found: warn
+          retention-days: 7
