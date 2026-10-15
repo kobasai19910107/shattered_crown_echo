@@ -103,13 +103,17 @@ func _open_route(route: String) -> void:
     if not run.state.forge_pending.is_empty() and route != "forge":
         return
     if route == "solo":
-        # This is already an exclusively Web-registered view; switching
-        # registered pages must not depend on the platform feature flag.
         if host.web_ui_shell.activate("solo") and host.web_solo_screen != null:
             host.web_solo_screen.refresh()
+    elif route in ["equipment","forge","merchant"]:
+        var screen = {
+            "equipment":host.web_equipment_screen,
+            "forge":host.web_forge_screen,
+            "merchant":host.web_merchant_screen
+        }.get(route,null)
+        if screen != null and host.web_ui_shell.activate(route):
+            screen.refresh()
     else:
-        # P4 will replace these with registered Web screens. The legacy
-        # facilities remain operational and provide a return-to-Web button.
         host._open_legacy_hub_page(route)
 
 func _open_legacy_home() -> void:
