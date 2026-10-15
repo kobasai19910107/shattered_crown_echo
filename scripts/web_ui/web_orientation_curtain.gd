@@ -15,17 +15,19 @@ func _ready() -> void:
     var column := VBoxContainer.new()
     column.mouse_filter = Control.MOUSE_FILTER_IGNORE
     column.alignment = BoxContainer.ALIGNMENT_CENTER
+    column.custom_minimum_size.x = 320
     column.add_theme_constant_override("separation",20)
     center.add_child(column)
     var emblem := Label.new()
-    emblem.text = "↻"
-    emblem.add_theme_font_size_override("font_size",54)
+    emblem.text = "横向き専用"
+    emblem.add_theme_font_size_override("font_size",29)
     emblem.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     emblem.mouse_filter = Control.MOUSE_FILTER_IGNORE
     column.add_child(emblem)
     var message := Label.new()
-    message.text = "画面を横向きにしてプレイしてください"
-    message.add_theme_font_size_override("font_size",21)
+    message.text = "iPhoneを横向きにしてください"
+    message.add_theme_font_size_override("font_size",18)
+    message.custom_minimum_size.x = 320
     message.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     message.mouse_filter = Control.MOUSE_FILTER_IGNORE
