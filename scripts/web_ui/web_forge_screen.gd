@@ -64,7 +64,7 @@ func _ready() -> void:
     dialog.title = "装備分解の最終確認"
     dialog.ok_button_text = "分解する"
     add_child(dialog)
-    dialog.popup_hide.connect(_on_dismantle_dialog_hidden)
+    dialog.visibility_changed.connect(_on_dismantle_dialog_hidden)
 
 
 func _wipe(node: Node) -> void:
@@ -224,6 +224,8 @@ func _on_dismantle_dialog_hidden() -> void:
     call_deferred("_release_hidden_dismantle_dialog")
 
 func _release_hidden_dismantle_dialog() -> void:
+    if dialog.visible:
+        return
     if _gate()!=null and _gate().commit_pending and _gate().selected_id.begins_with("forge/"):
         _cancel_pending_dialog()
 
