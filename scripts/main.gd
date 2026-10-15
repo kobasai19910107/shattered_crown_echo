@@ -20,6 +20,9 @@ const WebUIShellScript = preload("res://scripts/web_ui/web_ui_shell.gd")
 const WebBattleScreenScript = preload("res://scripts/web_ui/web_battle_screen.gd")
 const WebHubHomeScript = preload("res://scripts/web_ui/web_hub_home.gd")
 const WebSoloDepartureScript = preload("res://scripts/web_ui/web_solo_departure.gd")
+const WebEquipmentWarehouseScript = preload("res://scripts/web_ui/web_equipment_warehouse.gd")
+const WebForgeScreenScript = preload("res://scripts/web_ui/web_forge_screen.gd")
+const WebHubMerchantScript = preload("res://scripts/web_ui/web_hub_merchant.gd")
 
 const ATTRIBUTES := ["ALL", "物理", "炎", "水", "雷", "地", "光", "闇", "毒", "秘術", "風"]
 const WEAPONS := ["ALL", "片手剣", "レイピア", "短剣", "大剣", "魔法剣", "刀"]
@@ -38,6 +41,9 @@ var web_ui_shell
 var web_battle_screen
 var web_hub_screen
 var web_solo_screen
+var web_equipment_screen
+var web_forge_screen
+var web_merchant_screen
 
 var player_label: Label
 var piles_label: Label
@@ -495,6 +501,17 @@ func _ready() -> void:
         web_solo_screen = WebSoloDepartureScript.new()
         web_solo_screen.bind_host(self)
         web_ui_shell.register_screen("solo",web_solo_screen)
+        web_equipment_screen = WebEquipmentWarehouseScript.new()
+        web_equipment_screen.bind_host(self)
+        web_ui_shell.register_screen("equipment",web_equipment_screen)
+        web_forge_screen = WebForgeScreenScript.new()
+        web_forge_screen.bind_host(self)
+        web_ui_shell.register_screen("forge",web_forge_screen)
+        web_merchant_screen = WebHubMerchantScript.new()
+        web_merchant_screen.bind_host(self)
+        web_ui_shell.register_screen("merchant",web_merchant_screen)
+        web_ui_shell.navigation_allowed = func() -> bool:
+            return region_run_ui != null and region_run_ui.run.state.forge_pending.is_empty()
 
 # Title is a non-destructive overlay. The existing campaign controller still
 # handles load, migration, combat checkpoints, and the save envelope.
@@ -614,10 +631,23 @@ func _activate_web_hub() -> void:
     if region_run_ui == null or str(region_run_ui.run.state.phase) != "hub":
         return
     if not region_run_ui.run.state.forge_pending.is_empty():
-        _open_legacy_hub_page("forge")
+        _activate_web_facility("forge")
         return
     web_ui_shell.activate("hub")
     web_hub_screen.refresh()
+
+func _activate_web_facility(page: String) -> void:
+    if not OS.has_feature("web") or web_ui_shell == null or region_run_ui == null:
+        return
+    if str(region_run_ui.run.state.phase) != "hub" or page not in ["equipment","forge","merchant"]:
+        return
+    if not region_run_ui.run.state.forge_pending.is_empty() and page != "forge":
+        return
+    var screen = {"equipment":web_equipment_screen,"forge":web_forge_screen,"merchant":web_merchant_screen}.get(page,null)
+    if screen == null:
+        return
+    if web_ui_shell.activate(page):
+        screen.refresh()
 
 func _activate_web_solo() -> void:
     if not OS.has_feature("web") or web_ui_shell == null or web_solo_screen == null:
@@ -625,7 +655,7 @@ func _activate_web_solo() -> void:
     if region_run_ui == null or str(region_run_ui.run.state.phase) != "hub":
         return
     if not region_run_ui.run.state.forge_pending.is_empty():
-        _open_legacy_hub_page("forge")
+        _activate_web_facility("forge")
         return
     web_ui_shell.activate("solo")
     web_solo_screen.refresh()
