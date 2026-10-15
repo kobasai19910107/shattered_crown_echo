@@ -24,6 +24,7 @@ const WebEquipmentWarehouseScript = preload("res://scripts/web_ui/web_equipment_
 const WebForgeScreenScript = preload("res://scripts/web_ui/web_forge_screen.gd")
 const WebHubMerchantScript = preload("res://scripts/web_ui/web_hub_merchant.gd")
 const WebAdventureScreenScript = preload("res://scripts/web_ui/web_adventure_screen.gd")
+const WebOrientationCurtainScript = preload("res://scripts/web_ui/web_orientation_curtain.gd")
 
 const ATTRIBUTES := ["ALL", "物理", "炎", "水", "雷", "地", "光", "闇", "毒", "秘術", "風"]
 const WEAPONS := ["ALL", "片手剣", "レイピア", "短剣", "大剣", "魔法剣", "刀"]
@@ -46,6 +47,7 @@ var web_equipment_screen
 var web_forge_screen
 var web_merchant_screen
 var web_adventure_screen
+var web_orientation_curtain
 
 var player_label: Label
 var piles_label: Label
@@ -517,6 +519,10 @@ func _ready() -> void:
         web_ui_shell.register_screen("adventure",web_adventure_screen)
         web_ui_shell.navigation_allowed = func() -> bool:
             return region_run_ui != null and region_run_ui.run.state.forge_pending.is_empty()
+        # A global curtain is needed because the title and legacy screens
+        # are outside the P1 WebUIShell's portrait overlay.
+        web_orientation_curtain = WebOrientationCurtainScript.new()
+        add_child(web_orientation_curtain)
 
 # Title is a non-destructive overlay. The existing campaign controller still
 # handles load, migration, combat checkpoints, and the save envelope.
@@ -528,6 +534,10 @@ func _show_title_screen() -> void:
     game_title_screen=GameTitleScreenScript.new()
     add_child(game_title_screen)
     game_title_screen.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    if web_orientation_curtain != null:
+        # Title can be reopened after the curtain is created; keep portrait
+        # guidance above it without changing the desktop (Windows) scene.
+        move_child(web_orientation_curtain,get_child_count()-1)
     var campaign: CampaignController=region_run_ui.run as CampaignController
     var saved: bool=FileAccess.file_exists(campaign.save_path) or FileAccess.file_exists(campaign.legacy_save_path)
     var valid_saved: bool=saved and not campaign.save_blocked

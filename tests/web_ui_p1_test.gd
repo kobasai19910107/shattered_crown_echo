@@ -2,6 +2,7 @@ extends SceneTree
 const Gate = preload("res://scripts/web_ui/web_selection_gate.gd")
 const Router = preload("res://scripts/web_ui/web_ui_router.gd")
 const Shell = preload("res://scripts/web_ui/web_ui_shell.gd")
+const Curtain = preload("res://scripts/web_ui/web_orientation_curtain.gd")
 
 var failures: Array[String] = []
 var checks: int = 0
@@ -69,6 +70,19 @@ func _run() -> void:
     verify(shell.go_back(), "navigation resumes after acknowledgement")
     shell.close_shell()
     verify(not shell.visible, "shell closes")
+    var curtain = Curtain.new()
+    root.add_child(curtain)
+    await process_frame
+    verify(not curtain.visible, "global Web orientation curtain hides in landscape")
+    root.size = Vector2i(390,844)
+    await process_frame
+    curtain.refresh_orientation()
+    verify(curtain.visible and curtain.mouse_filter == Control.MOUSE_FILTER_STOP, "portrait curtain blocks title and old UI touches")
+    root.size = Vector2i(844,390)
+    await process_frame
+    curtain.refresh_orientation()
+    verify(not curtain.visible, "global portrait curtain releases landscape touches")
+    curtain.queue_free()
     shell.queue_free()
     await process_frame
     print("WEB_UI_P1 PASS=%d FAIL=%d" % [checks-failures.size(),failures.size()])
