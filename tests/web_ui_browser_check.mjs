@@ -52,6 +52,13 @@ try {
       };
     });
     await page.screenshot({path:path.join(output,device.label+".png"),fullPage:false});
+    if(device.width>device.height && !loadError) {
+      // A disposable browser profile has no save, so the title page
+      // offers "最初から". Tap its center and capture the actual Web hub.
+      await page.touchscreen.tap(Math.round(device.width/2),Math.round(device.height*0.615));
+      await page.waitForTimeout(1800);
+      await page.screenshot({path:path.join(output,device.label+"-after-new-game.png"),fullPage:false});
+    }
     const noOverflow=result.document.scrollWidth<=device.width+2&&result.document.scrollHeight<=device.height+2;
     const ok=!loadError&&result.canvasVisible&&noOverflow&&!errors.some(x=>x.startsWith("PAGE:")||x.startsWith("HTTP 404"));
     if(!ok)failures++;
